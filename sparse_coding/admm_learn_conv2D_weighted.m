@@ -248,17 +248,17 @@ function [ d_res, z_res, Dz, obj_val, iterations ] = admm_learn_conv2D_weighted(
         obj_val_z_old = obj_val_old;
         obj_val_z = obj_val;
         %这里应该也会使得程序终止，
-%         if obj_val_min <= obj_val_filter && obj_val_min <= obj_val_z
-%             %如果这个最小值小于等于filter和z的obj就会重新计算一下obj然后停止，这一块注释掉应该就不会停止了。
-%             z_hat = z_hat_old;
-%             z = reshape( real(ifft2( reshape(z_hat, size_x(1), size_x(2),[]) )), size_z );
-%             
-%             d_hat = d_hat_old;
-%             d = real(ifft2( d_hat ));
-%             
-%             obj_val = objective(z, d_hat);
-%             break;
-%         end
+        if obj_val_min <= obj_val_filter && obj_val_min <= obj_val_z
+            %如果这个最小值小于等于filter和z的obj就会重新计算一下obj然后停止，这一块注释掉应该就不会停止了。
+            z_hat = z_hat_old;
+            z = reshape( real(ifft2( reshape(z_hat, size_x(1), size_x(2),[]) )), size_z );
+            
+            d_hat = d_hat_old;
+            d = real(ifft2( d_hat ));
+            
+            obj_val = objective(z, d_hat);
+            break;
+        end
         %}
         
         %Display it.
@@ -287,9 +287,9 @@ function [ d_res, z_res, Dz, obj_val, iterations ] = admm_learn_conv2D_weighted(
         
         %Termination当z的differ/z<tol并且d的differ/d<tol才会停止。
         %将停止条件注释掉然后多迭代几次。并且记录一下obj的变化
-%         if norm(z_diff(:),2)/ norm(z_comp(:),2) < tol && norm(d_diff(:),2)/ norm(d_comp(:),2) < tol
-%             break;
-%         end
+        if norm(z_diff(:),2)/ norm(z_comp(:),2) < tol && norm(d_diff(:),2)/ norm(d_comp(:),2) < tol
+            break;
+        end
     end
     save ./data_psnr_p1.mat data_psnr_p1;
     save ./data_obj_D.mat data_obj_D;
