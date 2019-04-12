@@ -2,7 +2,11 @@ function [ d_res, z_res, Dz, obj_val, iterations ] = admm_learn_conv2D_weighted(
                     lambda_residual, lambda_prior, ...
                     max_it, tol, ...
                     verbose, init)
-           
+    
+    %记录实验数据所需要的变量
+    data_psnr_p1=[];
+    data_obj_D=[];
+    data_obj_Z=[];
     %Kernel size contains kernel_size = [psf_s, psf_s, k]
     psf_s = kernel_size(1);
     k = kernel_size(3);
@@ -82,6 +86,7 @@ function [ d_res, z_res, Dz, obj_val, iterations ] = admm_learn_conv2D_weighted(
         iterate_fig = figure();
         filter_fig = figure();
         display_func(iterate_fig, filter_fig, d, d_hat, z_hat, b, size_x, size_z, psf_radius, 0);
+        pause(0.1);
     end
     
     %Save all objective values and timings
@@ -167,6 +172,7 @@ function [ d_res, z_res, Dz, obj_val, iterations ] = admm_learn_conv2D_weighted(
             
             obj_val = objective(z, d_hat);
             if strcmp(verbose, 'brief') || strcmp( verbose, 'all')
+                data_obj_D(end+1)=obj_val;
                 fprintf('--> Obj %3.3g \n', obj_val )
             end
         end
@@ -233,6 +239,7 @@ function [ d_res, z_res, Dz, obj_val, iterations ] = admm_learn_conv2D_weighted(
             
             obj_val = objective(z, d_hat);
             if strcmp(verbose, 'brief') || strcmp( verbose, 'all')
+                data_obj_Z(end+1)=obj_val;
                 fprintf('--> Obj %3.3g \n', obj_val )
             end
         
@@ -240,22 +247,25 @@ function [ d_res, z_res, Dz, obj_val, iterations ] = admm_learn_conv2D_weighted(
         
         obj_val_z_old = obj_val_old;
         obj_val_z = obj_val;
-        
-        if obj_val_min <= obj_val_filter && obj_val_min <= obj_val_z
-            z_hat = z_hat_old;
-            z = reshape( real(ifft2( reshape(z_hat, size_x(1), size_x(2),[]) )), size_z );
-            
-            d_hat = d_hat_old;
-            d = real(ifft2( d_hat ));
-            
-            obj_val = objective(z, d_hat);
-            break;
-        end
+        %这里应该也会使得程序终止，
+%         if obj_val_min <= obj_val_filter && obj_val_min <= obj_val_z
+%             %如果这个最小值小于等于filter和z的obj就会重新计算一下obj然后停止，这一块注释掉应该就不会停止了。
+%             z_hat = z_hat_old;
+%             z = reshape( real(ifft2( reshape(z_hat, size_x(1), size_x(2),[]) )), size_z );
+%             
+%             d_hat = d_hat_old;
+%             d = real(ifft2( d_hat ));
+%             
+%             obj_val = objective(z, d_hat);
+%             break;
+%         end
         %}
         
         %Display it.
         if strcmp(verbose, 'all')
-            display_func(iterate_fig, filter_fig, d, d_hat, z_hat, b, size_x, size_z, psf_radius, i);
+            p1=display_func(iterate_fig, filter_fig, d, d_hat, z_hat, b, size_x, size_z, psf_radius, i);
+            data_psnr_p1(end+1)=p1;
+            pause(0.1);
         end
 
         %Debug progress
@@ -275,12 +285,15 @@ function [ d_res, z_res, Dz, obj_val, iterations ] = admm_learn_conv2D_weighted(
     
         %iterations.obj_vals(1:i + 1)
         
-        %Termination
-        if norm(z_diff(:),2)/ norm(z_comp(:),2) < tol && norm(d_diff(:),2)/ norm(d_comp(:),2) < tol
-            break;
-        end
+        %Termination当z的differ/z<tol并且d的differ/d<tol才会停止。
+        %将停止条件注释掉然后多迭代几次。并且记录一下obj的变化
+%         if norm(z_diff(:),2)/ norm(z_comp(:),2) < tol && norm(d_diff(:),2)/ norm(d_comp(:),2) < tol
+%             break;
+%         end
     end
-    
+    save ./data_psnr_p1.mat data_psnr_p1;
+    save ./data_obj_D.mat data_obj_D;
+    save ./data_obj_Z.mat data_obj_Z;
     %Final estimate
     z_res = z;
     
@@ -400,7 +413,7 @@ function f_val = objectiveFunction( z, d_hat, b, lambda_residual, lambda, psf_ra
     
 return;
 
-function [] = display_func(iterate_fig, filter_fig, d, d_hat, z_hat, b, size_x, size_z, psf_radius, iter)
+function [p1] = display_func(iterate_fig, filter_fig, d, d_hat, z_hat, b, size_x, size_z, psf_radius, iter)
 
     %Params
     sy = size_z(1); sx = size_z(2); k = size_z(3); n = size_z(4);
@@ -408,13 +421,15 @@ function [] = display_func(iterate_fig, filter_fig, d, d_hat, z_hat, b, size_x, 
     figure(iterate_fig);
     Dz = real(ifft2( reshape(sum(repmat(d_hat,[1,1,1,n]) .* z_hat, 3), size_x) ));
     Dz = Dz(1 + psf_radius:end - psf_radius,1 + psf_radius:end - psf_radius,:);
-
+    p1=psnr(b(:,:,1),Dz(:,:,1));
+    p2=psnr(b(:,:,2),Dz(:,:,2));
+    p3=psnr(b(:,:,3),Dz(:,:,3));
     subplot(3,2,1), imagesc(b(:,:,1));  axis image, colormap gray, title('Orig');
-    subplot(3,2,2), imagesc(Dz(:,:,1)); axis image, colormap gray; title(sprintf('Local iterate %d',iter));
-    subplot(3,2,3), imagesc(b(:,:,2));  axis image, colormap gray;
-    subplot(3,2,4), imagesc(Dz(:,:,2)); axis image, colormap gray;
+    subplot(3,2,2), imagesc(Dz(:,:,1)); axis image, colormap gray; title(sprintf('Local iterate %d,PSNR:%5.5g',iter,p1));
+    subplot(3,2,3), imagesc(b(:,:,2));  axis image, colormap gray;  
+    subplot(3,2,4), imagesc(Dz(:,:,2)); axis image, colormap gray; title(sprintf('PSNR:%5.5g',p2));
     subplot(3,2,5), imagesc(b(:,:,3));  axis image, colormap gray;
-    subplot(3,2,6), imagesc(Dz(:,:,3)); axis image, colormap gray;
+    subplot(3,2,6), imagesc(Dz(:,:,3)); axis image, colormap gray; title(sprintf('PSNR:%5.5g',p3));
 
     figure(filter_fig);
     sqr_k = ceil(sqrt(size(d,3)));

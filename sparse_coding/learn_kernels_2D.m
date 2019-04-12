@@ -26,8 +26,8 @@ fprintf('Doing sparse coding kernel learning for k = %d [%d x %d] kernels.\n\n',
 
 %Optim options
 verbose_admm = 'all';
-max_it = [100];
-tol = 1e-3;
+max_it = [50];%[100];
+tol = 1e-4;%1e-3;
 
 tic();
 
@@ -49,7 +49,7 @@ if strcmp(verbose, 'brief ') || strcmp(verbose, 'all')
 end
 
 %Save
-save(sprintf('filters_%s_obj%3.3g.mat', prefix, obj), 'd', 'z', 'Dz', 'obj', 'iterations');
+save(sprintf('./filters_%s_obj%3.3g.mat', prefix, obj), 'd', 'z', 'Dz', 'obj', 'iterations');
 
 %Debug
 fprintf('Done sparse coding learning! --> Time %2.2f sec.\n\n', tt)
