@@ -724,7 +724,7 @@ fprintf('Not Squaring, just converting all images from cell to matrix...\n')
 %     end
 % end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%figure();
+figure();
 fprintf('\nAll Images have been loaded and preprocessed.\n\n');
 
 

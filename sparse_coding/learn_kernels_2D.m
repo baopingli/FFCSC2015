@@ -15,7 +15,12 @@ COLOR_IMAGES = 'gray';
 
 %One long dataset iterating over color if defined
 b = reshape(b, size(b,1), size(b,2), [] ); 
-
+% size(b)
+% for i=1:size(b,3)
+%     subplot(1,10,i),imshow(b(:,:,i));
+% end
+%需要将原图像b存一下
+save ./data_b.mat b;
 %% Define the parameters
 kernel_size = [11, 11, 100];
 lambda_residual = 1.0;
